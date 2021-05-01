@@ -1,0 +1,2 @@
+Hochreiter, Sepp dan Schmidhber, Jurgen. (1997). Long Short-Term Memory. https://doi.org/10.1162/neco.1997.9.8.1735
+Dwi L, Adinda., Harijanto, Budi., Rahutomo, Faisal. (2020). Implementasi Deep Learning Untuk Deteksi Ekspresi Emosi pada Twitter.

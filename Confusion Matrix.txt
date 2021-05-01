@@ -1,0 +1,200 @@
+from sklearn.model_selection import StratifiedKFold
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+
+acc=[]
+presisi=[]
+recal=[]
+
+tprs = []
+aucs = []
+mean_fpr = np.linspace(0, 1, 100)
+fig, ax = plt.subplots()
+fold = 1
+
+
+  # word2vec_path = 'Word2Vec.txt'
+  word2vec = word2vec_weights
+
+  MAX_SEQUENCE_LENGTH = 47
+  EMBEDDING_DIM = 100
+  MAX_NB_WORDS = 47
+  x[train]=x[train].astype(str)
+
+  
+  tokenizer.fit_on_texts(x[train].tolist())
+  training_sequences = tokenizer.texts_to_sequences(x[train].tolist())
+
+  train_word_index = tokenizer.word_index
+  print('Found %s unique tokens.' % len(train_word_index))
+
+
+x = dataset['preprocessing']
+y = dataset['Emosi']
+for train, test in kfold.split(x, y):
+  labelss= pd.DataFrame(columns=['Bahagia', 'Sedih', 'Takut','Jijik', 'Marah', 'Terkejut'])
+  print(y[train])
+  print(labelss)
+  bahagia = []
+  sedih = []
+  takut = []
+  jijik = []
+  marah = []
+  terkejut = []
+  for l in y[train]:
+    if l == 0:
+        bahagia.append(1)
+        sedih.append(0)
+        takut.append(0)
+        jijik.append(0)
+        marah.append(0)
+        terkejut.append(0)
+    elif l == 1:
+        bahagia.append(0)
+        sedih.append(1)
+        takut.append(0)
+        jijik.append(0)
+        marah.append(0)
+        terkejut.append(0)
+    elif l == 2:
+        bahagia.append(0)
+        sedih.append(0)
+        takut.append(1)
+        jijik.append(0)
+        marah.append(0)
+        terkejut.append(0)
+    elif l == 3:
+        bahagia.append(0)
+        sedih.append(0)
+        takut.append(0)
+        jijik.append(1)
+        marah.append(0)
+        terkejut.append(0)
+    elif l == 4:
+        bahagia.append(0)
+        sedih.append(0)
+        takut.append(0)
+        jijik.append(0)
+        marah.append(1)
+        terkejut.append(0)
+    elif l == 5:
+        bahagia.append(0)
+        sedih.append(0)
+        takut.append(0)
+        jijik.append(0)
+        marah.append(0)
+        terkejut.append(1)
+
+  labelss['Bahagia']= bahagia
+  labelss['Sedih']= sedih
+  labelss['Takut']= takut
+  labelss['Jijik']= jijik
+  labelss['Marah']= marah
+  labelss['Terkejut']= terkejut
+
+  # word2vec_path = 'Word2Vec.txt'
+  word2vec = word2vec_weights
+
+  MAX_SEQUENCE_LENGTH = 1000
+  EMBEDDING_DIM = 100
+  MAX_NB_WORDS = 20000
+  x[train]=x[train].astype(str)
+
+  
+  tokenizer.fit_on_texts(x[train].tolist())
+  training_sequences = tokenizer.texts_to_sequences(x[train].tolist())
+
+  train_word_index = tokenizer.word_index
+  print('Found %s unique tokens.' % len(train_word_index))
+
+  train_cnn_data = pad_sequences(training_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+
+  train_embedding_weights = np.zeros((len(train_word_index)+1, EMBEDDING_DIM))
+  vocab_size, embedding_layer_input_size = train_embedding_weights.shape
+  print(vocab_size, embedding_layer_input_size)
+
+  test_sequences = tokenizer.texts_to_sequences(x[test].tolist())
+  test_cnn_data = pad_sequences(test_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+
+  label_names = ['Bahagia', 'Sedih', 'Takut','Jijik', 'Marah', 'Terkejut']
+
+  y_train = labelss.values
+  x_train = train_cnn_data
+  y_tr = y_train
+
+  # model = Model(sequence_input, preds)
+  model.compile(loss='categorical_crossentropy',
+                optimizer='adam',
+                metrics=['acc'])
+
+  num_epochs = 50
+  batch_size = 32
+
+  es_callback =EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+
+  hist = model.fit(x_train, y_tr, epochs=num_epochs, validation_split=0.3, shuffle=True , batch_size=batch_size,callbacks=[es_callback])
+
+  predictions = model.predict(test_cnn_data, batch_size=batch_size, verbose=1)
+  labels = [0,1,2,3,4,5]
+  prediction_labels=[]
+  for p in predictions:
+      prediction_labels.append(labels[np.argmax(p)])
+
+  xx=sum(y[test]==prediction_labels)/len(prediction_labels)
+
+  y_test= y[test].values
+
+  y_tes=[]
+  for i in range(0, len(y_test)):
+    y_tes.append(y_test[i])
+
+  y_pred=[]
+  for p in predictions:
+      y_pred.append(labels[np.argmax(p)])
+
+  cf_sentimen = pd.DataFrame(data=confusion_matrix(y_tes, y_pred, labels=labels), columns=labels, index=labels)
+  print(cf_sentimen)
+
+  tps_sentimen = {}
+  fps_sentimen  = {}
+  fns_sentimen  = {}
+  tns_sentimen  = {}
+  for label in labels:
+    tps_sentimen[label] = cf_sentimen.loc[label, label]
+    fps_sentimen[label] = cf_sentimen[label].sum() - tps_sentimen[label]
+    fns_sentimen[label] = cf_sentimen.loc[label].sum() - tps_sentimen[label]
+
+  for label in set(y_tes):
+    tns_sentimen[label] = len(y_tes) - (tps_sentimen[label] + fps_sentimen[label] + fns_sentimen[label])
+
+  accuracy_global_new_sentimen=sum(tps_sentimen.values())/len(y_tes)
+  acc.append(accuracy_global_new_sentimen)
+
+
+  tpfp_sentimen = [ai + bi for ai, bi in zip(list(tps_sentimen.values()), list(fps_sentimen.values()))]
+  precision=[ai / bi if bi>0 else 0 for ai , bi in zip(list(tps_sentimen.values()), tpfp_sentimen)]
+  precisionSentimen=sum(precision)/2
+  presisi.append(precisionSentimen)
+
+  tpfn_sentimen = [ai + bi for ai, bi in zip(list(tps_sentimen.values()), list(fns_sentimen.values()))]
+  recall=[ai / bi if bi>0 else 0 for ai, bi in zip(list(tps_sentimen.values()), tpfn_sentimen)]
+  recallSentimen=sum(recall)/2
+  recal.append(recallSentimen)
+
+  fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+  nilai_auc = auc(fpr, tpr)
+  interp_tpr = interp(mean_fpr, fpr, tpr)
+  interp_tpr[0] = 0.0
+  tprs.append(interp_tpr)
+  aucs.append(nilai_auc)
+  ax.plot(mean_fpr, interp_tpr, label=r'ROC Fold %d (AUC = %f)' % (fold, nilai_auc),
+      lw=1, alpha=0.3)
+  fold=fold+1
+
+print(acc)
+print(presisi)
+print(recal)
+
+print(sum(acc)/len(acc))
+print(sum(presisi)/len(presisi))
+print(sum(recal)/len(recal))
